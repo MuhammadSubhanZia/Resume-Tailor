@@ -1,35 +1,42 @@
-'use client'
-
-import { useState } from 'react'
-import { supabase } from '@/lib/supabaseClient'
+import { useState } from "react";
+import { supabase } from "@/lib/supabaseClient";
 
 export default function AuthForm() {
-  const [email, setEmail] = useState('')
-  const [sent, setSent] = useState(false)
+  const [email, setEmail] = useState("");
+  const [message, setMessage] = useState("");
 
-  const handleLogin = async () => {
-    const { error } = await supabase.auth.signInWithOtp({ email })
-    if (!error) setSent(true)
-    else alert(error.message)
-  }
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    const { error } = await supabase.auth.signInWithOtp({
+      email,
+      options: {
+        // ✅ Change this for localhost or Vercel deployment
+        emailRedirectTo: process.env.NEXT_PUBLIC_SITE_URL + "/auth/callback",
+      },
+    });
+
+    if (error) {
+      setMessage("Something went wrong. Try again.");
+    } else {
+      setMessage("Magic link sent! Check your email.");
+    }
+  };
 
   return (
-    <div className="flex flex-col gap-4 w-full max-w-sm mx-auto">
-      <h2 className="text-xl font-bold">Sign in via Magic Link</h2>
+    <form onSubmit={handleLogin} className="flex flex-col space-y-4">
       <input
         type="email"
-        placeholder="Enter your email"
-        className="border rounded px-4 py-2"
         value={email}
         onChange={(e) => setEmail(e.target.value)}
+        placeholder="Enter your email"
+        className="px-4 py-2 border rounded"
+        required
       />
-      <button
-        onClick={handleLogin}
-        className="bg-green-600 text-white px-4 py-2 rounded"
-      >
+      <button type="submit" className="bg-black text-white px-4 py-2 rounded">
         Send Magic Link
       </button>
-      {sent && <p className="text-green-700">Check your email 📩</p>}
-    </div>
-  )
+      {message && <p>{message}</p>}
+    </form>
+  );
 }
