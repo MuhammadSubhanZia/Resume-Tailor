@@ -9,26 +9,50 @@ export default function Home() {
   const router = useRouter();
 
   useEffect(() => {
-    const checkSession = async () => {
-      const { data } = await supabase.auth.getSession();
-      if (data.session) {
-        console.log("User is already logged in");
-        router.push("/form"); // 🚀 redirect to form or dashboard
+    const handleRedirect = async () => {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const user = sessionData.session?.user;
+
+      if (user) {
+        // Check if profile exists
+        const { data: profile, error } = await supabase
+          .from("user_profiles")
+          .select("*")
+          .eq("user_id", user.id)
+          .single();
+
+        if (profile) {
+          router.push("/dashboard");
+        } else {
+          router.push("/form");
+        }
       }
     };
 
-    checkSession();
+    handleRedirect();
 
-    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (session) {
-        console.log("Logged in via magic link!");
-        router.push("/form"); // 🚀 redirect after login
+    const { data: authListener } = supabase.auth.onAuthStateChange(
+      async (_event, session) => {
+        if (session) {
+          const user = session.user;
+
+          const { data: profile } = await supabase
+            .from("user_profiles")
+            .select("*")
+            .eq("user_id", user.id)
+            .single();
+
+          if (profile) {
+            router.push("/dashboard");
+          } else {
+            router.push("/form");
+          }
+        }
       }
-    });
+    );
 
-    // Cleanup listener on unmount
     return () => {
-      listener.subscription.unsubscribe();
+      authListener.subscription.unsubscribe();
     };
   }, [router]);
 

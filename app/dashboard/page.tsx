@@ -1,25 +1,39 @@
-// app/dashboard/page.tsx
-
 "use client";
 
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
 
-export default function DashboardPage() {
-  const [email, setEmail] = useState("");
+export default function Dashboard() {
+  const [profile, setProfile] = useState<any>(null);
 
   useEffect(() => {
-    const getUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) setEmail(user.email || "");
+    const fetchProfile = async () => {
+      const { data: userData } = await supabase.auth.getUser();
+      if (!userData?.user) return;
+
+      const { data: profileData } = await supabase
+        .from("user_profiles")
+        .select("*")
+        .eq("user_id", userData.user.id)
+        .single();
+
+      setProfile(profileData);
     };
-    getUser();
+
+    fetchProfile();
   }, []);
 
   return (
-    <main className="min-h-screen flex flex-col items-center justify-center bg-gray-100">
-      <h1 className="text-3xl font-bold mb-4">Welcome to Resume Tailor 👔</h1>
-      <p className="text-lg text-gray-600">You&apos;re logged in as <span className="font-semibold">{email}</span></p>
-    </main>
+    <div className="p-8">
+      {profile ? (
+        <>
+          <h1 className="text-3xl font-bold">Welcome, {profile.name} 👋</h1>
+          <h2 className="text-xl text-gray-600 mt-2">{profile.title}</h2>
+          <p className="mt-4">{profile.bio}</p>
+        </>
+      ) : (
+        <p>Loading profile...</p>
+      )}
+    </div>
   );
 }
