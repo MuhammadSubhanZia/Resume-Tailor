@@ -1,9 +1,8 @@
 // app/auth/callback/page.tsx
 'use client';
-
-import { useEffect } from "react";
-import { useRouter } from "next/navigation";
-import { supabase } from "@/lib/supabaseClient";
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { supabase } from '@/lib/supabaseClient';
 
 export default function CallbackPage() {
   const router = useRouter();
@@ -11,24 +10,17 @@ export default function CallbackPage() {
   useEffect(() => {
     const handleRedirect = async () => {
       const { data, error } = await supabase.auth.getSession();
+      if (error) {
+        console.error("Error fetching session", error);
+        return;
+      }
 
       if (data.session) {
-        // ✅ Redirect after login
-        const userId = data.session.user.id;
-
-        const { data: profile } = await supabase
-          .from("user_profiles")
-          .select("*")
-          .eq("user_id", userId)
-          .single();
-
-        if (profile) {
-          router.replace("/dashboard");
-        } else {
-          router.replace("/form");
-        }
+        console.log("User authenticated ✅", data.session);
+        router.push('/dashboard'); // redirect after successful login
       } else {
-        router.replace("/"); // failed to login
+        console.log("No session found ❌");
+        router.push('/'); // fallback if not authenticated
       }
     };
 
@@ -36,8 +28,8 @@ export default function CallbackPage() {
   }, [router]);
 
   return (
-    <main className="min-h-screen flex items-center justify-center">
-      <p>Redirecting...</p>
-    </main>
+    <div className="h-screen flex items-center justify-center text-lg font-medium">
+      Authenticating via Magic Link...
+    </div>
   );
 }
